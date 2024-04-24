@@ -2,11 +2,15 @@
 # restore --> build --> test --> pack
 # Triggers on PR's to protected branches.
 # Artifact to preserve packages.
-#
+# If push v* tag; then also does release
+# --> pack(release) --> nuget pub --> github release
 name: build
 
 on:
   workflow_dispatch:
+  push:
+    tags:
+      - "v*"
   pull_request:
     branches:
       - main
@@ -17,19 +21,71 @@ defaults:
   run: 
     shell: pwsh
 jobs:
+  version_info:
+    name: 'read version info from tag'
+    runs-on: ubuntu-latest
+    outputs:
+      is_release: '${{steps.version_from_tag.outputs.is_release}}'
+      is_preview: '${{steps.version_from_tag.outputs.is_preview}}'
+      version_prefix: '${{steps.version_from_tag.outputs.version_prefix}}'
+      version_suffix: '${{steps.version_from_tag.outputs.version_suffix}}'
+      package_version: '${{steps.version_from_tag.outputs.package_version}}'      
+    steps:
+      - name: version_from_tag
+        id: version_from_tag
+        shell: pwsh
+        run: |
+          $isTagged = '${{github.event_name == 'push' }}' -eq 'true'
+          
+          if(!$isTagged){
+            echo is_release="false" >> $env:GITHUB_OUTPUT
+            echo package_version="999.0.0" >> $env:GITHUB_OUTPUT
+            write-host "Not a release build, defaulting version"
+            return;
+          }
+          echo is_release="true" >> $env:GITHUB_OUTPUT
+
+          $tagVersion = "${{github.ref_name}}".Substring(1);
+
+          $parts = $tagVersion.Split('-');
+
+          $VersionPrefix = $parts[0];
+          echo version_prefix="$VersionPrefix" >> $env:GITHUB_OUTPUT
+
+          $VersionSuffix =  if($parts.Length -gt 1){$parts[1]}else{""}
+          echo version_suffix="$VersionSuffix" >> $env:GITHUB_OUTPUT
+
+          $isPreview = if($VersionSuffix -eq ""){"false"}else{"true"}
+          echo is_preview="$isPreview" >> $env:GITHUB_OUTPUT
+
+          $PackageSuffix = if($VersionSuffix -eq ""){""}else{"-$($VersionSuffix)"}
+          $PackageVersion = "$($VersionPrefix)$($PackageSuffix)"
+          echo package_version="$PackageVersion" >> $env:GITHUB_OUTPUT
+    
+      - name: results
+        run: |
+         echo "IsRelease - ${{steps.version_from_tag.outputs.is_release}}"
+         echo "IsPreview - ${{steps.version_from_tag.outputs.is_preview}}"
+         echo "VersionPrefix - ${{steps.version_from_tag.outputs.version_prefix}}"
+         echo "VersionSuffix - ${{steps.version_from_tag.outputs.version_suffix}}"
+         echo "PackageVersion - ${{steps.version_from_tag.outputs.package_version}}"
+
   build:
     runs-on: ubuntu-latest
     name: "Build and test"
+    needs: "version_info"
+    permissions:
+      contents: write
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
   
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: |
           8.0.x
 
-    - uses: actions/cache@v3
+    - uses: actions/cache@v4
       with:
         path: ~/.nuget/packages
         key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
@@ -58,17 +114,43 @@ jobs:
         src/
 
     - name: Pack 
+      if: needs.version_info.outputs.is_release != 'true'
+      run: >
+        dotnet pack
+        -c Release
+        --no-build
+        -o ./packages
+        ${{env.PackTarget}}
+
+    - name: Pack (release)
+      if: needs.version_info.outputs.is_release == 'true'
       run: >
         dotnet pack
         -c Release
         --no-build
         -o ./packages 
+        -p:PackageVersion=${{needs.version_info.outputs.package_version}}
         ${{env.PackTarget}}
 
     - name: Keep package artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: package
         path: packages/
         if-no-files-found: error
-  
+
+    - name: Nuget publish
+      if: ${{needs.version_info.outputs.is_release == 'true' }}
+      run: >
+        dotnet nuget push
+        "packages/*.*"
+        --api-key ${{secrets.NUGETPUSH}}
+        --source https://api.nuget.org/v3/index.json
+
+    - name: Create release
+      if: ${{needs.version_info.outputs.is_release == 'true' }}
+      uses: ncipollo/release-action@v1      
+      with:
+        draft: false
+        prerelease: ${{needs.version_info.outputs.is_preview}}
+        artifacts: "./packages/*"

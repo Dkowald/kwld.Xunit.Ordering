@@ -6,6 +6,8 @@ A small project to order xUnit tests.
 Simple Xunit test ordering, 
 where the order is defined by the test-class, unit test declaration order.
 
+[src](https://github.com/Dkowald/kwld.Xunit.Ordering) / [nuget](https://www.nuget.org/packages/kwld.Xunit.Ordering/)
+
 # Usage
 
 ``` cs

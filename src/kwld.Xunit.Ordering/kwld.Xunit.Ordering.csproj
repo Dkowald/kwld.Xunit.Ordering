@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <VersionPrefix>99.0.0</VersionPrefix>
+    <VersionPrefix>999.0.0</VersionPrefix>
     <PackageReleaseNotes>
       Simple xunit test ordering based on declaration order.
     </PackageReleaseNotes>
