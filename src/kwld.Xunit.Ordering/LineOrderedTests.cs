@@ -5,11 +5,17 @@ using Xunit.Sdk;
 
 namespace kwld.Xunit.Ordering
 {
+    /// <summary>
+    /// Test case order using <see cref="OrderedAttribute"/>.
+    /// </summary>
     public class LineOrderedTests : ITestCaseOrderer
     {
+        /// <summary>Assembly name</summary>
         public const string AssemName = "kwld.Xunit.Ordering";
+        /// <summary>TEst case order name</summary>
         public const string TypeName = "kwld.Xunit.Ordering.LineOrderedTests";
 
+        /// <inheritdoc cref="ITestCaseOrderer.OrderTestCases{TTestCase}"/>
         public IEnumerable<TTestCase> OrderTestCases<TTestCase>(IEnumerable<TTestCase> testCases)
             where TTestCase : ITestCase
         {

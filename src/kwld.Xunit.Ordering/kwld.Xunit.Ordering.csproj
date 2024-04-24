@@ -2,10 +2,37 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <VersionPrefix>99.0.0</VersionPrefix>
+    <PackageReleaseNotes>
+      Simple xunit test ordering based on declaration order.
+    </PackageReleaseNotes>
+    <Authors>Derek Kowald</Authors>
+    <Product>Kwld Xunit Ordering</Product>
+    <Title>Kwld Xunit Ordering</Title>
+    <Description>Simple xunit test ordering based on declaration order.</Description>
+    <PackageProjectUrl>https://github.com/Dkowald/kwld.Xunit.Ordering</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Dkowald/kwld.Xunit.Ordering.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageIcon>./icon.png</PackageIcon>
+    <PackageReadmeFile>Readme.md</PackageReadmeFile>
+    <PackageTags>xunit, unittest, ordered test</PackageTags>
+    <Copyright>Copyright (c) Derek Kowald 2024.</Copyright>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="xunit.core" Version="2.2.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="icon.png" Pack="true" PackagePath="/" />
+    <None Include="../../Readme.md" Pack="true" PackagePath="/" />
   </ItemGroup>
 
 </Project>
